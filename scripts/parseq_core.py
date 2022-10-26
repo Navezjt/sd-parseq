@@ -192,8 +192,10 @@ class Parseq():
                 draw = ImageDraw.Draw(processed_image_with_metadata)
 
                 # Wrap each item at 64 chars
-                metadata_text = {k: textwrap.fill(v,64) for k, v in p.extra_generation_params.items()}                
-                draw.text((10, 10), json.dumps(metadata_text))
+                metadata_text_lines = json.dumps(p.extra_generation_params, indent = 2, sort_keys=True).split("\n")
+                metadata_text_wrapped =  "\n".join(["\n".join(textwrap.wrap(l, 64)) for l in metadata_text_lines])
+                logging.info(metadata_text_wrapped)
+                draw.text((10, 10), metadata_text_wrapped)
                 
                 frame_to_render = np.asarray(processed_image_with_metadata)
                 frame_to_loop_back = np.asarray(processed_image)
@@ -219,6 +221,7 @@ class Parseq():
         if (input_type == 'video'):
             process1.wait()
         process2.wait()
+        logging.info(f"Generated: {output_path}")
 
         return [out_frame_history, "Here's some info mate. Where you gonna put it mate?"]
 

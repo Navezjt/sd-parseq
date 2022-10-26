@@ -51,7 +51,7 @@ input_path=None
 
 
 Parseq().run(p=DummyP(), input_img=input_img, input_path=input_path, output_path='<img2img_output_path>/parseq-<timestamp>.mp4',
-                         save_images=False, dry_run_mode=True, overlay_metadata=False,
+                         save_images=False, dry_run_mode=True, overlay_metadata=True,
                          default_output_dir='../test_data',
                          param_script_string=param_script_string, sd_processor=DummySDProcessing())
 
