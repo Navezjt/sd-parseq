@@ -19,6 +19,7 @@ import re
 import math
 from datetime import datetime
 import textwrap
+import pprint
 
 class Parseq():
 
@@ -189,7 +190,11 @@ class Parseq():
             if (overlay_metadata):
                 processed_image_with_metadata = processed_image.copy()
                 draw = ImageDraw.Draw(processed_image_with_metadata)
-                draw.text((10, 10), textwrap.fill(json.dumps(p.extra_generation_params, indent=2),64))
+
+                # Wrap each item at 64 chars
+                metadata_text = {k: textwrap.fill(v,64) for k, v in p.extra_generation_params.items()}                
+                draw.text((10, 10), json.dumps(metadata_text))
+                
                 frame_to_render = np.asarray(processed_image_with_metadata)
                 frame_to_loop_back = np.asarray(processed_image)
             else:
