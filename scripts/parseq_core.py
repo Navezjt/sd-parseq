@@ -103,7 +103,7 @@ class Parseq():
         while True:
             if not frame_pos in param_script:
                 logging.info(f"Ending: no script information about how to process frame {frame_pos}.")
-                if (input_type == 'video'):
+                if (input_type == 'video' and process1):
                     process1.stdin.close()
                 break     
 
