@@ -34,6 +34,7 @@ export class InterpreterContext {
     this.definedValues = context.definedValues;
     this.FPS = context.FPS;
     this.BPM = context.BPM;
+    this.variableMap = context.variableMap;
   }
 }
 
@@ -46,7 +47,7 @@ export function parse(input) {
 // Evaluation of parseq lang
 // Returns: a function that takes a frame number and returns a float value
 export function interpret(ast, context) {
-  //console.log("Interpreting: ", ast, context);
+  console.log("Interpreting: ", ast, context);
 
   if (typeof ast === 'number') {
     // Node was interpreted down to a constant.
@@ -87,7 +88,11 @@ export function interpret(ast, context) {
         case 'next_keyframe_value':
           return f => getNextKeyframeValue(context, f);
         default:
-          throw new Error(`Unrecognised variable ${ast.var_name.value} at ${ast.var_name.start.line}:${ast.var_name.start.col}`);
+          if (ast.var_name.value in context.variableMap) {
+            return _ => context.variableMap[ast.var_name.value];
+          } else {
+            throw new Error(`Unrecognised variable ${ast.var_name.value} at ${ast.var_name.start.line}:${ast.var_name.start.col}`);
+          }
       }
     case 'number_with_unit':
       switch (ast.right.value) {
@@ -204,10 +209,6 @@ function getNextKeyframeValue(context, f) {
   let idx = context.definedFrames.findIndex(v => v > f);
   return idx != -1 ? context.definedValues[idx] : context.definedValues.at(-1);
 }
-
-
-
-
 
 function oscillator(osc, period, pos, amp, centre, pulsewidth) {
   switch(osc) {

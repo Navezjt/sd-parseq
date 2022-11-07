@@ -386,6 +386,7 @@ const ParseqUI = (props) => {
     let keyframes = getKeyframes();
     if (keyframes.length<2) {
       setRenderedErrorMessage("There must be at least 2 keyframes.")
+      console.timeEnd('Render time');
       return;
     }
     let firstKeyFrame = keyframes[0];
@@ -402,6 +403,7 @@ const ParseqUI = (props) => {
     });
     if (missingFieldsFirst.length > 0 || missingFieldsLast.length > 0) {
       setRenderedErrorMessage(`First and last frames must have values for all fields, else interpolation cannot be calculated. Missing from first frame: ${missingFieldsFirst}. Missing from last frame: ${missingFieldsLast}`);
+      console.timeEnd('Render time');
       return;
     }
 
@@ -437,6 +439,7 @@ const ParseqUI = (props) => {
               definedValues: definedValues,
               FPS: options.output_fps,
               BPM: options.bpm,
+              variableMap: {}
             });
 
             try {
@@ -468,19 +471,43 @@ const ParseqUI = (props) => {
     // Calculate rendered prompt based on prompts and weights
     all_frame_numbers.forEach((frame) => {
 
-      let positive_prompt = prompts.positive
-                              .replace(/\$\{(.*?)\}/g, (_,weight) => rendered_frames[frame][weight])
-                              .replace(/(\n)/g," ");
-      let negative_prompt = prompts.negative
-                              .replace(/\$\{(.*?)\}/g, (_,weight) => rendered_frames[frame][weight])
-                              .replace(/(\n)/g," ");
+      let variableMap = {};
+      interpolatable_fields.forEach((field) => {
+        variableMap= {
+            ...variableMap || {},
+            [field]: rendered_frames[frame][field]
+        }
+      });
 
-      rendered_frames[frame] = {
-        ...rendered_frames[frame] || {},
-        positive_prompt: positive_prompt,
-        negative_prompt: negative_prompt,
-        deforum_prompt: `${positive_prompt} --neg ${negative_prompt}`
+      var context = new InterpreterContext({
+        fieldName: null,
+        thisKf: frame,
+        definedFrames: [],
+        definedValues: [],
+        FPS: options.output_fps,
+        BPM: options.bpm,
+        variableMap: variableMap
+      });
+
+      try {       
+        let positive_prompt = prompts.positive
+          .replace(/\$\{(.*?)\}/g, (_, weight) => interpret(parse(weight), context)(frame))
+          .replace(/(\n)/g, " ");
+        let negative_prompt = prompts.negative
+          .replace(/\$\{(.*?)\}/g, (_, weight) => interpret(parse(weight), context)(frame))
+          .replace(/(\n)/g, " ");
+        rendered_frames[frame] = {
+          ...rendered_frames[frame] || {},
+          positive_prompt: positive_prompt,
+          negative_prompt: negative_prompt,
+          deforum_prompt: `${positive_prompt} --neg ${negative_prompt}`
+        }
+      } catch (error) {
+          console.error(error);
+          setRenderedErrorMessage(`Error parsing prompt weight value: ` + error);
       }
+
+
 
     });
 
