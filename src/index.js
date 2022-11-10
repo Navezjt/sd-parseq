@@ -26,6 +26,10 @@ const router = createBrowserRouter([
     path: "/deforum",
     element: <Deforum/>,
   },
+  {
+    path: "/session",
+    element: <SessionManager/>,
+  },  
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
