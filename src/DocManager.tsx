@@ -8,19 +8,21 @@ import debounce from 'lodash.debounce';
 import React, { useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import ReactTimeAgo from 'react-time-ago';
-import { Roarr as log } from 'roarr';
+//import {PasteClient, ExpireDate, Publicity} from "pastebin-api";
 import { v4 as uuidv4 } from 'uuid';
 import { generateDocName } from './doc-name-generator';
 
 export class ParseqDexie extends Dexie {
     parseqVersions!: Table<ParseqDocVersion>;
     parseqDocs!: Table<ParseqDoc>;
+    globalConfig!: Table<{key: string, value: string, timestamp: number}>;
 
     constructor() {
         super('parseqDB');
-        this.version(1).stores({
+        this.version(2).stores({
             parseqVersions: 'versionId, docId, timestamp',
-            parseqDocs: 'docId, name'
+            parseqDocs: 'docId, name',
+            globalConfig: 'key, value, timestamp'
         });
     }
 }
@@ -86,6 +88,10 @@ export function DocManagerUI({ docId, onLoadContent }: MyProps) {
     const [lastModified, setLastModified] = useState(0);
     const [activeDoc, setActiveDoc] = useState({docId : docId, name: "loading"} as ParseqDoc);
     const [exportableDoc, setExportableDoc] = useState("");
+    const [pastebinUrl, setPastebinUrl] = useState("");
+    const [parseqPastebinUrl, setParseqPastebinUrl] = useState("");
+    const [pastebinDevKey, setPastebinDevKey] = useState("");
+    const [uploadStatus, setUploadStatus] = useState(<></>);
 
     const activeDocSetter = useLiveQuery(
         async () => {
@@ -102,6 +108,15 @@ export function DocManagerUI({ docId, onLoadContent }: MyProps) {
                 return newDoc;
             }
         }, [docId]);
+
+    const pastebinDevKeyRetriver = useLiveQuery(
+        async () => {
+            const pastebinDevKeyCandidate = await db.globalConfig.get('pastebinDevKey')
+            if (pastebinDevKeyCandidate) {
+                setPastebinDevKey(pastebinDevKeyCandidate.value);
+            }
+        }, []);
+
     const docVersions = useLiveQuery(
         async () => {
             if (activeDoc) {
@@ -302,29 +317,113 @@ const handleCloseShareDialog = (e: any): void => {
     setOpenShareDialog(false);
 };
 
-const shareDialog = <Dialog open={openShareDialog} onClose={handleCloseShareDialog}>
+const handleUploadToPastebin = async (e: any): Promise<void> => {
+    console.log('in');
+    if (!pastebinDevKey) {
+        return;
+    }
+    setUploadStatus(<></>);
+    
+    // const client = new PasteClient(pastebinDevKey);
+
+
+    fetch('https://cors.io/?https://pastebin.com/api/api_post.php',{
+        method: "POST",
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({
+            api_dev_key: pastebinDevKey,
+            api_option: "paste",
+            api_paste_code: exportableDoc,
+            api_paste_name: activeDoc.name + " - Parseq - " + window.location.hostname,
+            api_paste_private: 0,
+            api_paste_format: "json",
+        })
+      }).then(res => {
+        console.log("Request complete! response:", res);
+        setPastebinUrl(res.url);
+        setUploadStatus(<Alert severity="success">
+                <p>Upload <a href={res.url}>successful</a>. Share the URL above to load it directly into Parseq on another system.</p>
+            </Alert>);  
+      }).catch(err => {
+        console.log("Request failed", err);
+        setUploadStatus(<Alert severity="error"><p>Upload failed: {err}</p></Alert>);
+      });
+}
+
+const shareDialog = <Dialog open={openShareDialog} onClose={handleCloseShareDialog} maxWidth='lg'>
     <DialogTitle>Share your Parseq document</DialogTitle>
     <DialogContent>
-        <DialogContentText>
-            Export your work so it can be loaded on another system:
+    <Grid container>
+        <Grid xs={12}>
+        <DialogContentText marginBottom='10px'>
+            Share your doc via Pastebin:
         </DialogContentText>
-        <TextField
-            style={{ width: '100%' }}
-            id="doc-export"
-            label="Exportable output"
-            multiline
-            onFocus={event => event.target.select()}
-            rows={20}
-            InputProps={{ style: { fontFamily: 'Monospace', fontSize: '0.75em' } }}
-            value={exportableDoc}
-            variant="filled"
+        </Grid>
+        <Grid xs={3}>
+            <TextField
+                required={true}
+                fullWidth={true}
+                id="doc-pastebin-key"
+                label="Pastebin dev key"
+                placeholder="Your pastebin dev key"
+                InputLabelProps={{shrink: true}}
+                InputProps={{ style: { fontFamily: 'Monospace', fontSize: '0.75em' } }}
+                value={pastebinDevKey}
+                onChange={(e) => db.globalConfig.put({ key: 'pastebinDevKey', value: e.target.value, timestamp: Date.now() }) }
             />
-            <Alert severity="info">This is for you to load your work in Parseq on another system. Don't use this directly in Deforum or Stable diffusion (use the rendered output from the main screen for that). This JSON object includes only keyframe data, not rendered data for each frame.</Alert>
+        </Grid>
+        <Grid xs={2} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+            <Button disabled={!pastebinDevKey} size="small" id="copy_share" variant="contained"  onClick={handleUploadToPastebin} >Upload ➡️</Button>
+        </Grid>
+        <Grid xs={5}>
+            <TextField
+                fullWidth={true}
+                id="doc-parseq-pastebin-url"
+                label="Parseq URL"
+                placeholder="(Enter your pastebin dev key and hit upload.)"
+                InputLabelProps={{shrink: true}}
+                InputProps={{  readOnly: true, style: { fontFamily: 'Monospace', fontSize: '0.75em' } }}
+                value={parseqPastebinUrl}
+                variant="filled"
+            />
+        </Grid>
+        <Grid xs={2} sx={{display: 'flex', justifyContent: 'right', alignItems: 'start'}}>
+            <CopyToClipboard text={parseqPastebinUrl}>
+                <Button disabled={typeof parseqPastebinUrl === "undefined" } size="small" id="copy_share" variant="contained" >🔗 Copy URL</Button>
+            </CopyToClipboard>            
+        </Grid>        
+        <Grid xs={12}>
+            <small><a href='https://pastebin.com/doc_api#1'>Get a Pastebin dev key here</a> Your parseq doc will be uploaded as a <strong>public</strong> paste.</small>
+            {uploadStatus}
+        </Grid>
+        <Grid xs={12} paddingTop='20px'>
+            <hr/>
+            <DialogContentText paddingTop='20px' paddingBottom='5px'>
+            <strong>Or</strong> copy your document metadata to share with others manually:
+            </DialogContentText>
+        </Grid>
+        <Grid xs={10}>
+            <TextField
+                style={{ width: '100%' }}
+                id="doc-export"
+                label="Exportable output"
+                multiline
+                onFocus={event => event.target.select()}
+                rows={10}
+                InputProps={{ style: { fontFamily: 'Monospace', fontSize: '0.75em' } }}
+                value={exportableDoc}
+                variant="filled"
+                />
+                <Alert severity="info">This is for you to load your work in Parseq on another system. Don't use this directly in Deforum or Stable diffusion (use the rendered output from the main screen for that). This JSON object includes only keyframe data, not rendered data for each frame.</Alert>
+        </Grid>
+        <Grid xs={2} sx={{display: 'flex', justifyContent: 'right', alignItems: 'start'}}>
+            <CopyToClipboard text={exportableDoc}>
+                <Button size="small" id="copy_share" variant="contained"  >📋 Copy doc</Button>
+            </CopyToClipboard>
+        </Grid>
+    </Grid>        
     </DialogContent>
     <DialogActions>
-        <CopyToClipboard text={exportableDoc}>
-            <Button size="small" id="copy_share" variant="contained"  >📋 Copy</Button>
-        </CopyToClipboard>
         <Button size="small" id="done_share" onClick={handleCloseShareDialog}>Done</Button>
     </DialogActions>
 </Dialog>    

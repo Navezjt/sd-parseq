@@ -168,14 +168,14 @@ const Deforum = () => {
   return (
     <div>
       <Grid container paddingLeft={5} paddingRight={5}>
-        <Grid xs={8}>
+        <Grid xs={9}>
           <h2>Parseq v{packageJson.version} for Deforum</h2>
         </Grid>
-        <Grid xs={4} display='flex' justifyContent="space-around" alignItems='center' >
-          <Chip size="small" variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq#readme" clickable icon={<FontAwesomeIcon icon={faBook} />} label="Docs" />
-          <Chip size="small" variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq/issues" clickable icon={<FontAwesomeIcon icon={faBug} />} label="Bugs" />
-          <Chip size="small" variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq" clickable icon={<FontAwesomeIcon icon={faGithub} />} label="Code" />
-          <Chip size="small" variant="outlined" component="a" href="https://www.buymeacoffee.com/rewbs" clickable icon={<FontAwesomeIcon icon={faCoffee} />} label="Coffee" />
+        <Grid xs={3} display='flex' justifyContent="space-around" alignItems='center' >
+          <Chip variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq#readme" clickable icon={<FontAwesomeIcon icon={faBook} />} label="Docs" />
+          <Chip variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq/issues" clickable icon={<FontAwesomeIcon icon={faBug} />} label="Bugs" />
+          <Chip variant="outlined" component="a" href="https://github.com/rewbs/sd-parseq" clickable icon={<FontAwesomeIcon icon={faGithub} />} label="Code" />
+          <Chip variant="outlined" component="a" href="https://www.buymeacoffee.com/rewbs" clickable icon={<FontAwesomeIcon icon={faCoffee} />} label="Coffee" />
         </Grid>
       </Grid>
       <ParseqUI
