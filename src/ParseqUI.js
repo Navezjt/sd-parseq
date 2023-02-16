@@ -136,7 +136,8 @@ const ParseqUI = (props) => {
   const [initStatus, setInitStatus] = useState({});
   const [uploadStatus, setUploadStatus] = useState(<></>);
   const [lastRenderTime, setLastRenderTime] = useState(0);
-  
+  const [gridCursorPos, setGridCursorPos] = useState(0);
+    
 
   const runOnceTimeout = useRef();
   const _frameToRowId_cache = useRef();
@@ -178,6 +179,11 @@ const ParseqUI = (props) => {
             params.data[field] = isNaN(parseFloat(params.newValue)) ? "" : parseFloat(params.newValue);
           },
           suppressMovable: true,
+          cellStyle: params => ({
+            backgroundColor: fieldNametoRGBa(field, 0.1),
+            borderRight: '1px solid lightgrey'
+          })
+          
         },
         {
           headerName: '➟' + field,
@@ -193,6 +199,10 @@ const ParseqUI = (props) => {
             params.data[field + '_i'] = params.newValue;
           },
           suppressMovable: true,
+          cellStyle: params => ({
+            backgroundColor: fieldNametoRGBa(field, 0.1),
+            borderRight: '1px solid black'
+          })
         }
       ])
     ]
@@ -733,6 +743,9 @@ const ParseqUI = (props) => {
         undoRedoCellEditingLimit={0}
         enableCellChangeFlash={true}
         tooltipShowDelay={0}
+        onCellMouseOver={(e) => {
+          setGridCursorPos(e.data.frame);
+        }}
       />
     </div>
   </>, [columnDefs, defaultColDef, onCellValueChanged, onCellKeyPress, onGridReady, default_keyframes]);
@@ -892,18 +905,28 @@ const ParseqUI = (props) => {
           prompts.flatMap((p, idx) => [{
               x: p.from,
               color: 'rgba(50,200,50, 0.8)',
-              label: 'p' + (idx+1) + ' start',
+              label: p.name + 'start',
               display: !p.allFrames,
               top: true
             },
             {
               x: p.to,
               color: 'rgba(200,50,50, 0.8)',
-              label: 'p' + (idx+1) + ' end',
+              label: p.name + ' end',
               display: !p.allFrames,
               top: false
             }
           ])
+          .concat(
+            [
+              {
+                x: gridCursorPos,
+                color: 'rgba(0, 0, 100, 1)',
+                label: 'Grid cursor',
+                top: true
+              }
+            ]
+          )
         : []}
       updateKeyframe={(field, index, value) => {
         let rowId = frameToRowId(index)
@@ -927,7 +950,7 @@ const ParseqUI = (props) => {
         }
       }}
     />
-  </div>, [renderedData, displayFields, graphAsPercentages, graphPromptMarkers, addRow, frameToRowId]);
+  </div>, [renderedData, displayFields, graphAsPercentages, graphPromptMarkers, gridCursorPos, addRow, frameToRowId]);
 
   const handleClickedSparkline = useCallback((e) => {
     let field = e.currentTarget.id.replace("sparkline_", "");
@@ -1065,10 +1088,10 @@ const ParseqUI = (props) => {
       <Grid xs={4}>
       <Box display='flex' justifyContent="right" gap={1} alignItems='center' paddingTop={1}>
         <Tooltip2 title="Generate Parseq keyframes from audio (⚠️ experimental).">
-          <Button color="success" variant="outlined" size="small" href={'/analyser?fps='+(options?.output_fps||20)+'&refDocId='+activeDocId } target='_blank' rel="noreferrer">Audio Analyzer...</Button>
+          <Button color="success" variant="outlined" size="small" href={'/analyser?fps='+(options?.output_fps||20)+'&refDocId='+activeDocId } target='_blank' rel="noreferrer">🎧 Audio Analyzer</Button>
         </Tooltip2>
         <Tooltip2 title="Explore your Parseq documents.">
-          <Button color="success" variant="outlined" size="small" href={'/browser?refDocId='+activeDocId} target='_blank' rel="noreferrer">Doc Browser...</Button>
+          <Button color="success" variant="outlined" size="small" href={'/browser?refDocId='+activeDocId} target='_blank' rel="noreferrer">🔎 Doc Browser</Button>
         </Tooltip2>
       </Box>  
       </Grid>      

@@ -61,7 +61,7 @@ export function Preview(props: PreviewProps) {
                             <div style={{
                                  float:'none',
                                  overflow:'visible',
-                                 backgroundColor: percentageToColor(valueAsPercent/100, 160, 0, 0.5),
+                                 backgroundColor: percentageToColor(valueAsPercent/100, 100, 0, 0.5),
                                  width: (valueAsPercent +'%') }} >
                                 {field.name}&nbsp;:&nbsp;{renderedFrames[frame][field.name].toFixed(4)}
                             </div>
